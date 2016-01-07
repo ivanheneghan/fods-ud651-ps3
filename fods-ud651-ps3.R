@@ -133,4 +133,3 @@ tbl_whpw <- spread(tbl_whpw, year, hours)
 # Getting delta change for each country between 1990 and 2007
 tbl_whpw$delta <- tbl_whpw$`2007` - tbl_whpw$`1990`
 summary(tbl_whpw$delta)
-# Histogram showing delta
