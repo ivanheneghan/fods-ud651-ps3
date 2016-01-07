@@ -153,9 +153,11 @@ g1 <- ggplot(aes(tbl_whpw$`1990`), data = tbl_whpw, binwidth = 1) +
   xlab("Working hours per week") +
   ylab("Count of countries") +
   ggtitle("Working hours in 1990")
+
 g2 <- ggplot(aes(tbl_whpw$`2007`), data = tbl_whpw, binwidth = 1) + 
   geom_histogram() +
   xlab("Working hours per week") +
   ylab("Count of countries") +
   ggtitle("Working hours in 2007")
+
 grid.arrange(g1, g2, ncol = 1)

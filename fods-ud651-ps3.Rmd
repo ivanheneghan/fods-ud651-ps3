@@ -1,22 +1,265 @@
 ---
 title: "UD651 - Problem Set 3"
 author: "Ivan Heneghan"
-date: "5 January 2016"
+date: "8 January 2016"
 output: html_document
 ---
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+This is the project report for UD651 - Problem Set 3.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Install all relevant packages
 
 ```{r}
-summary(cars)
+install.packages("ggplot2", repos = "http://cran.us.r-project.org")
+install.packages("gridExtra", repos = "http://cran.us.r-project.org")
+library(ggplot2)
+library(gridExtra)
+library(xlsx)
+library(data.table)
+library(tidyr)
+library(plyr)
+library(dplyr, warn.conflicts = FALSE)
 ```
 
-You can also embed plots, for example:
+Load diamonds data set, and perform initial analysis
+
+```{r}
+str(diamonds)
+head(diamonds)
+colnames(diamonds)
+summary(diamonds)
+View(diamonds)
+```
+
+Produce histogram of price of all the diamonds
 
 ```{r, echo=FALSE}
-plot(cars)
+qplot(x = price, data = diamonds)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Summary of price information
+
+```{r}
+summary(diamonds$price)
+```
+
+Counts
+
+```{r}
+sum(diamonds$price < 500)
+sum(diamonds$price < 250)
+sum(diamonds$price >= 15000)
+```
+
+Exploring the largest peak in the histogram
+
+Entire histogram
+
+```{r}
+qplot(x = price, data = diamonds, binwidth = 250, 
+      xlab = "Price", ylab = "Count of diamonds") +
+  scale_x_continuous(limits = c(250, 20000), breaks = seq(250, 20000, 2500))
+```
+
+Zooming in on highest peak
+```{r}
+qplot(x = price, data = diamonds, binwidth = 50, 
+      xlab = "Price", ylab = "Count of diamonds") +
+  scale_x_continuous(limits = c(250, 2000), breaks = seq(250, 2000, 250))
+```
+
+Break out prices by cut
+
+Histograms
+
+```{r}
+qplot(x = price, data = diamonds, binwidth = 250, 
+      xlab = "Price", ylab = "Count of diamonds") +
+  scale_x_continuous(limits = c(250, 20000), breaks = seq(250, 20000, 2500)) + 
+  facet_wrap(~cut)
+```
+
+Numerical analysis
+
+```{r}
+by(diamonds$price, diamonds$cut, summary)
+```
+
+Using Max due to rounding
+
+```{r}
+by(diamonds$price, diamonds$cut, max)
+```
+
+Scales & multiple histograms
+
+```{r}
+qplot(x = price, data = diamonds) + 
+  facet_wrap(~cut, scales = "free_y")
+```
+
+Price per Carat by Cut
+
+```{r}
+qplot(x = price/carat, data = diamonds, binwidth = 50) +
+  facet_wrap(~cut, scales = "free_y") +
+  scale_x_log10()
+```
+
+Box plot - Price of diamonds, numerical summaries, and one other variable
+
+```{r}
+qplot(x = color, y = price, 
+      data = diamonds, 
+      geom = "boxplot",
+      color = color) +
+  coord_cartesian(ylim = c(250, 20000))
+```
+
+IQR analysis
+
+```{r}
+by(diamonds$price, diamonds$color, summary)
+IQR(subset(diamonds, color == "D" )$price)
+IQR(subset(diamonds, color == "J")$price)
+```
+
+Box plot - Price per carat of diamonds across colors
+
+```{r}
+qplot(x = color, y = price/carat , 
+      data = diamonds, 
+      geom = "boxplot",
+      xlab = "Color",
+      ylab = "Price per Carat",
+      color = color) +
+  coord_cartesian(ylim = c(250, 20000))
+```
+
+Frequency polygon
+
+```{r}
+qplot(x = carat, data = diamonds, 
+      binwidth = 0.05,
+      xlab = "Carat",
+      ylab = "Count",
+      geom = "freqpoly") +
+  scale_x_continuous(limits = c(0, 5), breaks = seq(0, 10, 0.1))
+```
+
+Gapminder analysis - working hours per week
+
+1. Import data
+
+```{r}
+whpw <- read.xlsx("D:\\Foundations of Data Science\\Projects\\EDA - Facebook\\fods-ud651-ps3\\indicator_hours per week.xlsx", 1, stringsAsFactors = FALSE)
+```
+
+2. Rename first column to something more meaningful
+
+```{r}
+names(whpw)[1] <- c("country")
+```
+
+3. Tidy data - gather into two column key-value pair
+
+```{r}
+whpw <- whpw %>% gather(year, hours, -country)
+```
+
+4. Remove X's from start of years
+
+```{r}
+whpw$year <- gsub("X", "", whpw$year)
+```
+
+5. Create data table from the imported data
+
+```{r}
+tbl_whpw <- tbl_df(whpw)
+```
+
+6. Initial viewing of data
+
+```{r}
+str(tbl_whpw)
+head(tbl_whpw)
+colnames(tbl_whpw)
+summary(tbl_whpw)
+View(tbl_whpw)
+```
+
+7. Analysis - boxplot showing progression over time
+
+```{r}
+ggplot(tbl_whpw[!is.na(whpw$hours),], aes(x = year, y = hours, fill = year)) + 
+  geom_boxplot() +
+  xlab("Year") +
+  ylab("Working hours per week") +
+  ggtitle("Working hours per week over time")
+```
+
+8. Analysis - line graph
+
+```{r}
+ggplot(aes(x = year, y = hours, group = country, color = country), data = tbl_whpw, binwidth = 5) +
+  geom_line() +
+  xlab("Year") +
+  ylab("Working hours per week") +
+  ggtitle("Working hours per week over time")
+```
+
+9. Analysis - subsetting to look at countries with > 40 hours per week over entire time period
+
+```{r}
+ggplot(aes(x = year, y = hours, group = country, color = country), data = subset(tbl_whpw, hours > 40) , binwidth = 5) +
+  geom_line() +
+  xlab("Year") +
+  ylab("Working hours per week") +
+  ggtitle("Working hours per week over time")
+```
+
+10. Analysis - subsetting to look at countries with < 40 hours per week over entire time period
+
+```{r}
+ggplot(aes(x = year, y = hours, group = country, color = country), data = subset(tbl_whpw, hours < 40) , binwidth = 5) +
+  geom_line() +
+  xlab("Year") +
+  ylab("Working hours per week") +
+  ggtitle("Working hours per week over time")
+```
+
+11. Melting data to allow delta change calculation & histogram
+
+```{r}
+tbl_whpw <- spread(tbl_whpw, year, hours)
+```
+
+12. Getting delta change for each country between 1990 and 2007
+
+```{r}
+tbl_whpw$delta <- tbl_whpw$`2007` - tbl_whpw$`1990`
+```
+
+13. Analysis - Reviewing sumary of delta change
+
+```{r}
+summary(tbl_whpw$delta)
+```
+
+14. Analysis - looking at histograms for 1990 and 2007
+```{r}
+g1 <- ggplot(aes(tbl_whpw$`1990`), data = tbl_whpw, binwidth = 1) + 
+  geom_histogram() +
+  xlab("Working hours per week") +
+  ylab("Count of countries") +
+  ggtitle("Working hours in 1990")
+
+g2 <- ggplot(aes(tbl_whpw$`2007`), data = tbl_whpw, binwidth = 1) + 
+  geom_histogram() +
+  xlab("Working hours per week") +
+  ylab("Count of countries") +
+  ggtitle("Working hours in 2007")
+
+grid.arrange(g1, g2, ncol = 1)
+```
