@@ -1,8 +1,13 @@
-# Install packages
+# Install packages & load relevant libraries
 install.packages("ggplot2")
 install.packages("gridExtra")
 library(ggplot2)
 library(gridExtra)
+library(xlsx)
+library(data.table)
+library(tidyr)
+library(plyr)
+library(dplyr, warn.conflicts = FALSE)
 
 # Load diamonds data set, and initial analysis
 str(diamonds)
@@ -82,55 +87,75 @@ qplot(x = carat, data = diamonds,
   scale_x_continuous(limits = c(0, 5), breaks = seq(0, 10, 0.1))
 
 # Gapminder analysis - working hours per week
-# Load relevant libraries
-library(xlsx)
-library(data.table)
-library(tidyr)
-library(plyr)
-library(dplyr, warn.conflicts = FALSE)
+
 # Import data
 whpw <- read.xlsx("D:\\Foundations of Data Science\\Projects\\EDA - Facebook\\fods-ud651-ps3\\indicator_hours per week.xlsx", 1, stringsAsFactors = FALSE)
+
 # Rename first column to something more meaningful
 names(whpw)[1] <- c("country")
+
 # Tidy data - gather into two column key-value pair
 whpw <- whpw %>% gather(year, hours, -country)
+
 # Remove X's from start of years
 whpw$year <- gsub("X", "", whpw$year)
+
 # Create data table from the imported data
 tbl_whpw <- tbl_df(whpw)
+
 # Initial viewing of data
 str(tbl_whpw)
 head(tbl_whpw)
 colnames(tbl_whpw)
 summary(tbl_whpw)
 View(tbl_whpw)
+
 # Boxplot showing progression over time
 ggplot(tbl_whpw[!is.na(whpw$hours),], aes(x = year, y = hours, fill = year)) + 
   geom_boxplot() +
   xlab("Year") +
   ylab("Working hours per week") +
   ggtitle("Working hours per week over time") +
+
 # Line graph
 ggplot(aes(x = year, y = hours, group = country, color = country), data = tbl_whpw, binwidth = 5) +
   geom_line() +
   xlab("Year") +
   ylab("Working hours per week") +
   ggtitle("Working hours per week over time")
+
 # Subsetting to look at countries with > 40 hours per week over entire time period
 ggplot(aes(x = year, y = hours, group = country, color = country), data = subset(tbl_whpw, hours > 40) , binwidth = 5) +
   geom_line() +
   xlab("Year") +
   ylab("Working hours per week") +
   ggtitle("Working hours per week over time")
+
 # Subsetting to look at countries with < 40 hours per week over entire time period
 ggplot(aes(x = year, y = hours, group = country, color = country), data = subset(tbl_whpw, hours < 40) , binwidth = 5) +
   geom_line() +
   xlab("Year") +
   ylab("Working hours per week") +
   ggtitle("Working hours per week over time")
+
 # Melting data to allow delta change calculation & histogram
 tbl_whpw <- spread(tbl_whpw, year, hours)
+
 # Getting delta change for each country between 1990 and 2007
 tbl_whpw$delta <- tbl_whpw$`2007` - tbl_whpw$`1990`
+
+# Reviewing sumary of delta change
 summary(tbl_whpw$delta)
-# Histogram showing delta
+
+# Looking at histograms for 1990 and 2007
+g1 <- ggplot(aes(tbl_whpw$`1990`), data = tbl_whpw, binwidth = 1) + 
+  geom_histogram() +
+  xlab("Working hours per week") +
+  ylab("Count of countries") +
+  ggtitle("Working hours in 1990")
+g2 <- ggplot(aes(tbl_whpw$`2007`), data = tbl_whpw, binwidth = 1) + 
+  geom_histogram() +
+  xlab("Working hours per week") +
+  ylab("Count of countries") +
+  ggtitle("Working hours in 2007")
+grid.arrange(g1, g2, ncol = 1)
