@@ -1,13 +1,18 @@
-# Install packages & load relevant libraries
+# Install packages
 install.packages("ggplot2")
 install.packages("gridExtra")
+install.packages("lubridate")
+
+# Load relevant libraries
+library(data.table)
+library(dplyr, warn.conflicts = FALSE)
 library(ggplot2)
 library(gridExtra)
-library(xlsx)
-library(data.table)
-library(tidyr)
+library(lubridate)
 library(plyr)
-library(dplyr, warn.conflicts = FALSE)
+library(reshape2)
+library(tidyr)
+library(xlsx)
 
 # Load diamonds data set, and initial analysis
 str(diamonds)
@@ -115,7 +120,7 @@ ggplot(tbl_whpw[!is.na(whpw$hours),], aes(x = year, y = hours, fill = year)) +
   geom_boxplot() +
   xlab("Year") +
   ylab("Working hours per week") +
-  ggtitle("Working hours per week over time") +
+  ggtitle("Working hours per week over time")
 
 # Line graph
 ggplot(aes(x = year, y = hours, group = country, color = country), data = tbl_whpw, binwidth = 5) +
@@ -161,3 +166,66 @@ g2 <- ggplot(aes(tbl_whpw$`2007`), data = tbl_whpw, binwidth = 1) +
   ggtitle("Working hours in 2007")
 
 grid.arrange(g1, g2, ncol = 1)
+
+# Exploring friend's birthdays
+
+# Import data
+birthdays <- read.csv("D:\\Foundations of Data Science\\Projects\\EDA - Facebook\\fods-ud651-ps3\\birthdaysExample.csv", stringsAsFactors = F)
+
+# Tidy data
+birthdays$betterDates <- as.Date(birthdays$dates, format = "%m/%d/%y")
+
+# Extract year, month, day, day of year
+birthdays <- birthdays %>% mutate(year = year(birthdays$betterDates), month = month(birthdays$betterDates), day = day(birthdays$betterDates))
+birthdays <- birthdays %>% mutate(dayOfYear = yday(birthdays$betterDates))
+
+# Viewing of data
+str(birthdays)
+head(birthdays)
+colnames(birthdays)
+summary(birthdays)
+View(birthdays)
+
+# Number of people sharing my birthday (March 26th) - 2 people
+count(subset(birthdays, month == "3" & day == "26"))
+
+# Which month has the most birthdays? - March
+ggplot(data = birthdays, aes(x = month)) + 
+    geom_histogram(binwidth = 1, color = "white", fill = "dark blue") +
+    xlab("Month") +
+    ylab("Count of Birthdays") +
+    ggtitle("Birthdays per Month") +
+  scale_x_continuous(limits = c(1, 12), breaks = seq(1, 12, 1))
+
+# Number of birthdays in each month
+count(birthdays$month)
+
+ggplot(data = birthdays, aes(x = month)) + 
+  geom_histogram(binwidth = 1, color = "white", fill = "dark blue") +
+  xlab("Month") +
+  ylab("Count of Birthdays") +
+  ggtitle("Birthdays per Month") +
+  scale_x_continuous(limits = c(1, 12), breaks = seq(1, 12, 1)) +
+  scale_y_continuous(breaks=seq(60, 100, 1)) +
+  coord_cartesian(ylim=60:100)
+
+# Day of the year with most birthdays - 37th, 142nd and 197th days (Feb 6th, May 22nd and July 16th)
+birthdaysPerDay <- count(birthdays$dayOfYear)
+birthdaysPerDay <- arrange(birthdaysPerDay, desc(freq))
+head(birthdaysPerDay)
+
+ggplot(data = birthdays, aes(x = day)) + 
+  geom_histogram(binwidth = 1, color = "white", fill = "dark blue") +
+  xlab("Months") +
+  ylab("Count of Birthdays") +
+  ggtitle("Birthdays per Day, per Month") +
+  scale_x_continuous(limits = c(1, 31), breaks = seq(1, 31, 1)) +
+  facet_wrap(~month, ncol = 3)
+
+# Friends with birthdays every day of the year? - No, as there are gaps in the graph
+ggplot(data = birthdays, aes(x = dayOfYear)) + 
+  geom_histogram(binwidth = 1, color = "white", fill = "dark blue") +
+  xlab("Day") +
+  ylab("Count of Birthdays") +
+  ggtitle("Birthdays per Day") +
+  scale_x_continuous(limits = c(1, 366), breaks = seq(1, 366, 1))
