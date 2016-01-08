@@ -34,7 +34,7 @@ View(diamonds)
 Produce histogram of price of all the diamonds
 
 ```{r, echo=FALSE}
-qplot(x = price, data = diamonds)
+qplot(x = price, data = diamonds, binwidth = 10)
 ```
 
 Summary of price information
@@ -94,7 +94,7 @@ by(diamonds$price, diamonds$cut, max)
 Scales & multiple histograms
 
 ```{r}
-qplot(x = price, data = diamonds) + 
+qplot(x = price, data = diamonds, binwidth = 10) + 
   facet_wrap(~cut, scales = "free_y")
 ```
 
